@@ -4,8 +4,11 @@ from uuid import uuid4
 from extractors.paths import UastPathsBagExtractor
 from transformers.vocabulary2id import Vocabulary2Id
 from sourced.ml.transformers import UastDeserializer, Uast2BagFeatures, create_uast_source, \
-    UastRow2Document, Moder
+     Moder
 from sourced.ml.utils.engine import pipeline_graph, pause
+
+from extractors.extended_document_features import UastRow2ExtendedDocument
+from transformers.deanonymizer import Deanonymizer
 
 
 @pause
@@ -15,8 +18,9 @@ def code2vec_extract_features(args):
     root, start_point = create_uast_source(args, session_name)
 
     res = start_point \
+        .link(Deanonymizer(root)) \
         .link(Moder("func")) \
-        .link(UastRow2Document()) \
+        .link(UastRow2ExtendedDocument()) \
         .link(UastDeserializer()) \
         .link(Uast2BagFeatures([UastPathsBagExtractor(args.max_length, args.max_width)])) \
         .link(Vocabulary2Id(root.session.sparkContext, args.output)) \
